@@ -74,6 +74,18 @@ public:
 
   ~BNode(void){}
   
+  bool find(value_t val) {
+    int i = 0;
+    while (i < n && val > keys[i])
+      i++;
+
+    if (keys[i] == val) return true;
+
+    if (leaf) return false;
+
+    return ptrs[i]->find(val);
+  }
+  
   void insertInNode(value_t val) {
     int i = n - 1;
 
@@ -165,10 +177,11 @@ public:
     }
   }
 
-  bool find(const value_t = 0) const{
+  bool find(const value_t val = 0) const{
     // TODO :: SEARCH
     // search(x); inside each page
-    return false;
+    if (root == nullptr) return false;
+    return root->find(val);
   }
 
   friend std::ostream& operator<<(std::ostream& out, BTree<T,S> tree){
@@ -187,7 +200,21 @@ int main() {
 
   typedef SS_Traits<float> strait_t;
   BTree<strait_t,4> stree; 
+  
   stree.insert(1);
-  std::cout<<stree<< std::endl;
+  stree.insert(2);
+  stree.insert(3);
+  stree.insert(4);
+  stree.insert(5);
+  stree.insert(6);
+  
+  std::cout << stree.find(1) << std::endl;
+  std::cout << stree.find(2) << std::endl;
+  std::cout << stree.find(3) << std::endl;
+  std::cout << stree.find(4) << std::endl;
+  std::cout << stree.find(5) << std::endl;
+  std::cout << stree.find(6) << std::endl;
+  
+  std::cout << stree << std::endl;
 }
 
