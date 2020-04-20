@@ -13,7 +13,9 @@ public:
   class simple_search{
   public:
     int operator() (container_t a, value_t v){
-      return 0;
+      for (int i = 0; i < a.size(); i++)
+        if (a[i] == v) return i;
+      return -1;
     }
   };
 
