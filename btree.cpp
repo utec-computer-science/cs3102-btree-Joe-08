@@ -70,7 +70,7 @@ public:
   bool leaf;
 
   BNode(void):order(S), n(0), leaf(false) {
-    keys = container_t(order - 1, 0);
+    keys = container_t(order-1, 0);
     ptrs = pcontainer_t(order, nullptr);
 
   }
@@ -103,7 +103,7 @@ public:
     } else {
       while (i >= 0 && keys[i] > val) i--;
 
-      if (ptrs[i+1]->n == order - 1) {
+      if (ptrs[i+1]->n == order-1) {
         splitNode(i+1, ptrs[i+1]);
         if (keys[i+1] < val) i++;
       }
@@ -118,15 +118,17 @@ public:
 
     for (int j = 0; j < std::ceil(order / 2) - 1; j++) {
       newNode->keys[j] = node->keys[j+newNode->n+1];
-      node->keys[j+newNode->n+1] = 0;
     }
 
     if (node->leaf == false) {
       for (int j = 0; j < std::ceil(order / 2); j++)
-        newNode->ptrs[j] = node->ptrs[j+newNode->n];
+        newNode->ptrs[j] = node->ptrs[j+newNode->n+1];
     }
 
     node->n = std::ceil(order / 2) - 1;
+
+    for (int j = n ; j>= i + 1; j--)
+      ptrs[j+1] = ptrs[j];
 
     ptrs[i+1] = newNode;
 
@@ -134,7 +136,6 @@ public:
       keys[j+1] = keys[j];
 
     keys[i] = node->keys[std::ceil(order/2)-1];
-    node->keys[std::ceil(order/2)-1] = 0;
 
     n++;
   }
@@ -165,7 +166,7 @@ public:
       root->n = 1;
       root->leaf = true;
     } else {
-      if (root->n == root->order - 1) {
+      if (root->n == root->order-1) {
         BNode<T,S> *ptr = new BNode<T,S>();
         ptr->ptrs[0] = root;
         ptr->splitNode(0, root); 
