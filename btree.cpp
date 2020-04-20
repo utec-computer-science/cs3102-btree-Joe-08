@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector> 
 #include <cmath>
+#include <queue>
 
 template <typename T>
 class SS_Traits{
@@ -183,9 +184,42 @@ public:
     if (root == nullptr) return false;
     return root->find(val);
   }
+  
+  void printTree() {
+    printTree(root);
+  }
+
+  void printTree(BNode<T,S> *node) { //lvl order print
+    if (root == nullptr) return;
+    
+    std::queue<BNode<T,S>*> q;
+
+    q.push(node);
+
+    while (!q.empty()) {
+      int size = q.size();
+
+      while (size > 0) {
+        BNode<T,S> *lvlNode = q.front();
+        
+        for (int i = 0; i < lvlNode->n; i++)
+          std::cout << lvlNode->keys[i] << " ";
+        
+        q.pop();
+
+        for (int i = 0; i < lvlNode->ptrs.size(); i++) 
+          if (lvlNode->ptrs[i] != nullptr) 
+            q.push(lvlNode->ptrs[i]);
+
+        std::cout << "- ";
+        size--;
+      }
+      std::cout << std::endl;
+    }
+  }
 
   friend std::ostream& operator<<(std::ostream& out, BTree<T,S> tree){
-    tree.print();// (out)
+    tree.printTree();// (out)
     // IN PRE POST LEVEL ORDER
     return out;
   }
@@ -195,8 +229,8 @@ public:
 int main() {
   typedef BS_Traits<int> btrait_t;
   BTree<btrait_t,4> tree;
-  tree.find(10);
-  std::cout<<tree<< std::endl;
+  std::cout << tree.find(10) << std::endl;
+  std::cout << tree << std::endl;
 
   typedef SS_Traits<float> strait_t;
   BTree<strait_t,4> stree; 
@@ -215,6 +249,6 @@ int main() {
   std::cout << stree.find(5) << std::endl;
   std::cout << stree.find(6) << std::endl;
   
-  std::cout << stree << std::endl;
+  std::cout << std::endl << stree << std::endl;
 }
 
