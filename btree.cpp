@@ -62,10 +62,12 @@ public:
   container_t keys;
   pcontainer_t ptrs;
   std::size_t  order;
+  int n;
+  bool leaf;
 
-  BNode(void):order(S){
-    keys=container_t(order,0);
-    ptrs=pcontainer_t(order,NULL);
+  BNode(void):order(S), n(0), leaf(false) {
+    keys = container_t(order - 1, 0);
+    ptrs = pcontainer_t(order, nullptr);
 
   }
 
@@ -84,7 +86,7 @@ public:
   print_t print;
   functor_t search;
 
-  BTree(void):root(NULL){
+  BTree(void):root(nullptr){
   }
 
   ~BTree(void){}
