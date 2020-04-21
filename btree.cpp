@@ -66,20 +66,18 @@ public:
   container_t keys;
   pcontainer_t ptrs;
   std::size_t  order;
-  int n;
   bool leaf;
 
-  BNode(void):order(S), n(0), leaf(false) {
-    keys = container_t(order-1, 0);
-    ptrs = pcontainer_t(order, nullptr);
-
+  BNode(void):order(S), leaf(false) {
+    keys.reserve(order);
+    ptrs.reserve(order + 1);
   }
 
   ~BNode(void){}
   
   bool find(value_t val) {
     int i = 0;
-    while (i < n && val > keys[i])
+    while (i < keys.size() && val > keys[i])
       i++;
 
     if (keys[i] == val) return true;
@@ -89,55 +87,72 @@ public:
     return ptrs[i]->find(val);
   }
   
-  void insertInNode(value_t val) {
-    int i = n - 1;
+  
+  void insert(value_t key, value_t* val, BNode<T,S>*& node) {
+    if (leaf == false) {
+      int i = 0;
 
-    if (leaf) {
-      while (i >= 0 && keys[i] > val) {
-        keys[i+1] = keys[i];
-        i--;
+      while (i < keys.size() && key > keys[i]) i++;
+
+      ptrs[i]->insert(key, val, node);
+
+      if (node == nullptr) return;
+      if (keys.size() < order - 1) {
+        keys.insert(keys.begin() + i, *val);
+        ptrs.insert(ptrs.begin() + i + 1, node);
+        node = nullptr;
+      } else {
+        keys.insert(keys.begin() + i, *val);
+        ptrs.insert(ptrs.begin() + i + 1, node);
+        split(val, node);
       }
-
-      keys[i+1] = val;
-      n++;
     } else {
-      while (i >= 0 && keys[i] > val) i--;
+      iterator_t it;
+      it = lower_bound(keys.begin(), keys.end(), key);
 
-      if (ptrs[i+1]->n == order-1) {
-        splitNode(i+1, ptrs[i+1]);
-        if (keys[i+1] < val) i++;
+      int m = std::ceil(order / 2) - 1;
+
+      keys.insert(it, key);
+
+      if (keys.size() == order) {
+        node = new BNode<T,S>();
+        node->leaf = true;
+
+        *val = this->keys[m];
+
+        for (int i = m + 1; i < order; i++)
+          node->keys.push_back(this->keys[i]);
+
+        this->keys.resize(m);
       }
-      ptrs[i+1]->insertInNode(val);
     }
   }
 
-  void splitNode(int i, BNode<T,S>* node) {
-    BNode<T,S>* newNode = new BNode<T,S>();
-    newNode->leaf = node->leaf;
-    newNode->n = std::ceil(order / 2) - 1;
+  void split(value_t *val, BNode<T,S>*& node) {
+    node = new BNode<T,S>();
 
-    for (int j = 0; j < std::ceil(order / 2) - 1; j++) {
-      newNode->keys[j] = node->keys[j+newNode->n+1];
-    }
+    int m = std::ceil(order / 2) - 1;
+    *val = this->keys[m];
 
-    if (node->leaf == false) {
-      for (int j = 0; j < std::ceil(order / 2); j++)
-        newNode->ptrs[j] = node->ptrs[j+newNode->n+1];
-    }
+    for (int i = m + 1; i < order; i++)
+      node->keys.push_back(this->keys[i]);
 
-    node->n = std::ceil(order / 2) - 1;
+    this->keys.resize(m);
 
-    for (int j = n ; j>= i + 1; j--)
-      ptrs[j+1] = ptrs[j];
+    for (int i = m + 1; i <= order; i++)
+      node->ptrs.push_back(this->ptrs[i]);
 
-    ptrs[i+1] = newNode;
+    this->ptrs.resize(m + 1);
+  }
 
-    for (int j = n - 1; j >= i; j--)
-      keys[j+1] = keys[j];
+  BNode<T,S>* makeNewRoot(value_t val, BNode<T,S>* node) {
+    BNode<T,S>* root = new BNode<T,S>();
 
-    keys[i] = node->keys[std::ceil(order/2)-1];
+    root->keys.push_back(val);
 
-    n++;
+    root->ptrs.push_back(this);
+    root->ptrs.push_back(node);
+    return root;
   }
 };
 
@@ -153,32 +168,22 @@ public:
   print_t print;
   functor_t search;
 
-  BTree(void):root(nullptr){
+  BTree(void) {
+    root = new BNode<T,S>();
+    root->leaf = true;
   }
 
   ~BTree(void){}
 
-  void insert(const value_t& val = 0){
+  void insert(const value_t& key = 0) {
     // TODO :: INSERT
-    if (root == nullptr) {
-      root = new BNode<T,S>(); 
-      root->keys[0] = val;
-      root->n = 1;
-      root->leaf = true;
-    } else {
-      if (root->n == root->order-1) {
-        BNode<T,S> *ptr = new BNode<T,S>();
-        ptr->ptrs[0] = root;
-        ptr->splitNode(0, root); 
-        
-        int i = 0;
-        if (ptr->keys[0] < val) i++;
-        ptr->ptrs[i]->insertInNode(val);
+    BNode<T,S> *newNode = nullptr;
+    value_t val = 0;
 
-        root = ptr;
-      } else
-        root->insertInNode(val);
-    }
+    root->insert(key, &val, newNode);
+
+    if (newNode != nullptr)
+      root = root->makeNewRoot(val, newNode);
   }
 
   bool find(const value_t val = 0) const{
@@ -205,8 +210,11 @@ public:
       while (size > 0) {
         BNode<T,S> *lvlNode = q.front();
         
-        for (int i = 0; i < lvlNode->n; i++)
+        for (int i = 0; i < lvlNode->keys.size(); i++) {
+          if (lvlNode->leaf == false) 
+            std::cout << "  ";
           std::cout << lvlNode->keys[i] << " ";
+        }
         
         q.pop();
 
@@ -214,7 +222,7 @@ public:
           if (lvlNode->ptrs[i] != nullptr) 
             q.push(lvlNode->ptrs[i]);
 
-        std::cout << "- ";
+        std::cout << "  ";
         size--;
       }
       std::cout << std::endl;
@@ -239,10 +247,15 @@ int main() {
   BTree<strait_t,4> stree; 
   
   stree.insert(1);
+  std::cout << "Insert 1" << std::endl << stree << std::endl;
   stree.insert(2);
+  std::cout << "Insert 2" << std::endl << stree << std::endl;
   stree.insert(3);
+  std::cout << "Insert 3" << std::endl << stree << std::endl;
   stree.insert(4);
+  std::cout << "Insert 4" << std::endl << stree << std::endl;
   stree.insert(5);
+  std::cout << "Insert 5" << std::endl << stree << std::endl;
   stree.insert(6);
   
   std::cout << stree.find(1) << std::endl;
