@@ -13,13 +13,16 @@ public:
   class simple_search{
   public:
     int operator() (container_t a, value_t v){
-      for (int i = 0; i < a.size(); i++)
+      int i;
+      for (i = 0; i < a.size(); i++) {
         if (a[i] == v) return i;
-      return -1;
+        if (a[i] > v) break;
+      }
+      return i;
     }
   };
 
-  class post_order_print{
+  class lvl_order_print{
   public:
     void operator() (void){
       std::cout << "post order" << std::endl;
@@ -27,7 +30,7 @@ public:
   };
 
   typedef simple_search functor_t;
-  typedef post_order_print print_t;
+  typedef lvl_order_print print_t;
 };
 
 template <typename T>
@@ -44,7 +47,7 @@ public:
     }
   };
 
-  class pre_order_print{
+  class pre_order_print {
   public:
     void operator() (void){
       std::cout << "pre order" << std::endl;
@@ -62,11 +65,13 @@ public:
   typedef typename T::container_t container_t;
   typedef typename T::iterator_t iterator_t;
   typedef std::vector< BNode<T,S>* > pcontainer_t;
+  typedef typename T::functor_t functor_t;
 
   container_t keys;
   pcontainer_t ptrs;
   std::size_t  order;
   bool leaf;
+  functor_t search;
 
   BNode(void):order(S), leaf(false) {
     keys.reserve(order);
@@ -76,10 +81,7 @@ public:
   ~BNode(void){}
   
   bool find(value_t val) {
-    int i = 0;
-    while (i < keys.size() && val > keys[i])
-      i++;
-
+    int i = search(keys, val); 
     if (keys[i] == val) return true;
 
     if (leaf) return false;
@@ -161,12 +163,10 @@ class BTree {
 public: 
   typedef typename T::value_t value_t;
   typedef typename T::container_t container_t;
-  typedef typename T::functor_t functor_t;
   typedef typename T::print_t print_t;
 
   BNode<T,S>* root;
   print_t print;
-  functor_t search;
 
   BTree(void) {
     root = new BNode<T,S>();
@@ -189,7 +189,7 @@ public:
   bool find(const value_t val = 0) const{
     // TODO :: SEARCH
     // search(x); inside each page
-    if (root == nullptr) return false;
+    if (root->keys.size() == 0) return false;
     return root->find(val);
   }
   
@@ -198,7 +198,7 @@ public:
   }
 
   void printTree(BNode<T,S> *node) { //lvl order print
-    if (root == nullptr) return;
+    if (root->keys.size() == 0) return;
     
     std::queue<BNode<T,S>*> q;
 
@@ -211,9 +211,10 @@ public:
         BNode<T,S> *lvlNode = q.front();
         
         for (int i = 0; i < lvlNode->keys.size(); i++) {
-          if (lvlNode->leaf == false) 
-            std::cout << "  ";
-          std::cout << lvlNode->keys[i] << " ";
+          if (i == lvlNode->keys.size() - 1)
+            std::cout << lvlNode->keys[i];
+          else 
+            std::cout << lvlNode->keys[i] << "-";
         }
         
         q.pop();
@@ -257,14 +258,30 @@ int main() {
   stree.insert(5);
   std::cout << "Insert 5" << std::endl << stree << std::endl;
   stree.insert(6);
+  std::cout << "Insert 6" << std::endl << stree << std::endl;
+  stree.insert(10.2);
+  std::cout << "Insert 10.2" << std::endl << stree << std::endl;
+  stree.insert(12);
+  std::cout << "Insert 12" << std::endl << stree << std::endl;
+  stree.insert(15);
+  std::cout << "Insert 15" << std::endl << stree << std::endl;
+  stree.insert(22);
   
+  std::cout << stree.find(44) << std::endl;
   std::cout << stree.find(1) << std::endl;
   std::cout << stree.find(2) << std::endl;
   std::cout << stree.find(3) << std::endl;
   std::cout << stree.find(4) << std::endl;
   std::cout << stree.find(5) << std::endl;
   std::cout << stree.find(6) << std::endl;
+  std::cout << stree.find(10.2) << std::endl;
+  std::cout << stree.find(12) << std::endl;
+  std::cout << stree.find(15) << std::endl;
+  std::cout << stree.find(22) << std::endl;
+  std::cout << stree.find(0) << std::endl;
+  std::cout << stree.find(85) << std::endl;
   
+  std::cout << std::endl << "BTree of floats:" ;
   std::cout << std::endl << stree << std::endl;
 }
 
